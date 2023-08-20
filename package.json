@@ -1,0 +1,12 @@
+{
+  "name": "utd-cal",
+  "version": "0.0.59",
+  "module": "src/index.ts",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "dependencies": {
+    "ics": "^3.4.0",
+    "rrule": "^2.7.2"
+  }
+}
