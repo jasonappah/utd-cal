@@ -260,5 +260,6 @@ dist
 .pnp.*
 
 *.ics
-src/me.ts
+src/me.*
+!src/me.template.ts
 .DS_Store
