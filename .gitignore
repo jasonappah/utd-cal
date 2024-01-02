@@ -259,5 +259,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-utd.ics
+*.ics
 src/me.ts
+.DS_Store
