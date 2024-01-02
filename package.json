@@ -5,6 +5,9 @@
   "devDependencies": {
     "bun-types": "latest"
   },
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
   "dependencies": {
     "ics": "^3.4.0",
     "rrule": "^2.7.2"
