@@ -45,8 +45,6 @@ for (const section of sections) {
     const startArgs: DateArray = [...isoToYMD(meeting.startDate), startHr, startMin]
     const endArgs: DateArray = [...isoToYMD(meeting.endDate), Math.floor(meeting.endTime / 100), meeting.endTime % 100]
 
-    const ruleSet = new RRuleSet()
-
     const meetingRecurrenceRule = new RRule({
       freq: RRule.WEEKLY,
       byweekday: Array.from(meeting.daysRaw).map(day => rawDayToRRuleDay[day]),
@@ -55,10 +53,8 @@ for (const section of sections) {
       until: datetime(...endArgs)
     })
 
-    ruleSet.rrule(meetingRecurrenceRule)
-
     // When stringified, the ruleset specifies the RRULE and DTSTART;TZID on separate lines. When we pass the RRULE to ics, it already adds the RRULE: prefix, so we need to remove it to ensure the event is parsed correctly.
-    const r = ruleSet.toString().split("\n").reverse().join("\n").replace("RRULE:", "")
+    const r = meetingRecurrenceRule.toString().split("\n").reverse().join("\n").replace("RRULE:", "")
 
     events.push({
       title: `${section.subject} ${section.course} ${section.sectionNumber} - ${meeting.location}`,
