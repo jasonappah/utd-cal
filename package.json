@@ -9,6 +9,7 @@
     "start": "bun run src/index.ts"
   },
   "dependencies": {
+    "@touch4it/ical-timezones": "^1.9.0",
     "ics": "^3.4.0",
     "rrule": "^2.7.2"
   }

@@ -5,6 +5,7 @@ todo one day: make this a bookmarklet? i could see this being helpful to others 
 - move this into my main website repo
 - create a page in my website w setup steps + directions
 
+also need to make this DST-aware, my calendar events were off by an hour when the time change happened in the fall :(
 ---
 
 ## Getting Started

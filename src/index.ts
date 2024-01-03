@@ -1,8 +1,10 @@
 import { datetime, RRule, RRuleSet } from "rrule"
 import { createEvents } from "ics"
-import type {EventAttributes } from "ics"
+import type { DateArray, EventAttributes } from "ics"
 import { myData } from "./me"
-import { fall2023holidays } from "./data"
+import { currentHolidays, UTD_TIMEZONE } from "./data"
+import { getGitCommitHash } from './getGitCommitHash' with { type: 'macro' };
+import * as tz from '@touch4it/ical-timezones'
 
 if (!myData) {
   console.error('No data found. Did you copy me.template.ts to me.ts and paste in your data?')
@@ -10,11 +12,6 @@ if (!myData) {
 }
 
 const sections = myData.currentSections
-const holidayRRuleset = new RRuleSet()
-
-for (const holiday of fall2023holidays) {
-  holidayRRuleset.exdate(datetime(...(holiday.date.split('-').map(Number) as [number, number, number])))
-}
 
 const rawDayToRRuleDay = {
   'M': RRule.MO,
@@ -33,37 +30,66 @@ const isoToYMD = (iso: string) => {
 
 const events = [] as EventAttributes[]
 
+const vtimezone = tz.getVtimezoneComponent(UTD_TIMEZONE)
+if (!vtimezone) {
+  console.error('No timezone found')
+  process.exit(1)
+}
+
 for (const section of sections) {
-  // Skip math hw sections
-  if (section.subject === "MATH" && (section.sectionNumber.startsWith('70'))) continue
+  // Skip exam/hw sections
+  if ((section.subject === "MATH" || section.subject === "PHYS") && (section.sectionNumber.startsWith('70'))) continue
 
   for (const meeting of section.meetings) {
-    const dtstart = datetime(...isoToYMD(meeting.startDate))
-    const end = datetime(...isoToYMD(meeting.endDate))
-    const ruleset = holidayRRuleset.clone()
-    const rule = new RRule({
+    const startHr = Math.floor(meeting.startTime / 100)
+    const startMin = meeting.startTime % 100
+    const startArgs: DateArray = [...isoToYMD(meeting.startDate), startHr, startMin]
+    const endArgs: DateArray = [...isoToYMD(meeting.endDate), Math.floor(meeting.endTime / 100), meeting.endTime % 100]
+
+    const ruleSet = new RRuleSet()
+
+    const meetingRecurrenceRule = new RRule({
       freq: RRule.WEEKLY,
-      byweekday: meeting.daysRaw.split('').map(day => rawDayToRRuleDay[day]),
-      dtstart,
-      until: end
+      byweekday: Array.from(meeting.daysRaw).map(day => rawDayToRRuleDay[day]),
+      // TODO: Think i neeed to reintroduce this cause the timezone doesn't get applied without it
+      // dtstart: datetime(...startArgs),
+      tzid: UTD_TIMEZONE,
+      until: datetime(...endArgs)
     })
-    ruleset.rrule(rule)
-    const day: [number,number,number] = [dtstart.getFullYear(), dtstart.getMonth()+1, dtstart.getDate()+1]
+
+    ruleSet.rrule(meetingRecurrenceRule)
+    // for (const holiday of currentHolidays) {
+    //   const d = datetime(...isoToYMD(holiday.date), startHr, startMin)
+    //   ruleSet.exdate(d)
+    // }
+
+    // console.log(section.subject, section.course, meeting.startTime, ruleSet.all())
+    // console.log(ruleSet.toString())
+    const r = ruleSet.toString().replace("RRULE:", "")
+    console.log(r)
+
     events.push({
       title: `${section.subject} ${section.course} ${section.sectionNumber} - ${meeting.location}`,
-      description: section.description,
-      start: [...day, Math.floor(meeting.startTime / 100), meeting.startTime % 100],
-      end: [...day,Math.floor(meeting.endTime / 100), meeting.endTime % 100],
+      start: startArgs,
+      end: endArgs,
       location: meeting.location,
-      recurrenceRule: ruleset.toString(),
-      productId: "jasonaa/utd-cal",
+      recurrenceRule: r,
+      productId: `jasonaa/utd-cal-${getGitCommitHash()}`,
+      // @ts-ignore
+      exclusionDates: currentHolidays.map(h => isoToYMD(h.date))
     })
   }
 }
 
-const {error, value} = createEvents(events)
-if (value) {
-  await Bun.write('utd.ics', value)
+const {error, value: og} = createEvents(events)
+if (og) {
+  // const value = og.replace('BEGIN:VEVENT', `${vtimezone}BEGIN:VEVENT`)
+  const value = og
+  // .replaceAll("\\n", "\r\n")
+  // .replaceAll("\r\n\t", "")
+  const fileName = `utd.ics`
+  await Bun.write(fileName, value)
+  console.log('Wrote', fileName)
 }
 
 if (error) {
