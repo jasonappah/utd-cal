@@ -42,15 +42,17 @@ for (const section of sections) {
   for (const meeting of section.meetings) {
     const startHr = Math.floor(meeting.startTime / 100)
     const startMin = meeting.startTime % 100
-    const startArgs: DateArray = [...isoToYMD(meeting.startDate), startHr, startMin]
-    const endArgs: DateArray = [...isoToYMD(meeting.endDate), Math.floor(meeting.endTime / 100), meeting.endTime % 100]
+    const startDateISO = isoToYMD(meeting.startDate)
+    const startArgs: DateArray = [...startDateISO, startHr, startMin]
+    const endHr = Math.floor(meeting.endTime / 100)
+    const endMin = meeting.endTime % 100
 
     const meetingRecurrenceRule = new RRule({
       freq: RRule.WEEKLY,
       byweekday: Array.from(meeting.daysRaw).map(day => rawDayToRRuleDay[day]),
       dtstart: datetime(...startArgs),
       tzid: UTD_TIMEZONE,
-      until: datetime(...endArgs)
+      until: datetime(...isoToYMD(meeting.endDate), endHr, endMin)
     })
 
     // When stringified, the ruleset specifies the RRULE and DTSTART;TZID on separate lines. When we pass the RRULE to ics, it already adds the RRULE: prefix, so we need to remove it to ensure the event is parsed correctly.
@@ -59,7 +61,7 @@ for (const section of sections) {
     events.push({
       title: `${section.subject} ${section.course} ${section.sectionNumber} - ${meeting.location}`,
       start: startArgs,
-      end: endArgs,
+      end: [...startDateISO, endHr, endMin],
       location: meeting.location,
       recurrenceRule: r,
       productId: `jasonaa/utd-cal-${getGitCommitHash()}`,
