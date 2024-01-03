@@ -11,6 +11,11 @@ if (!myData) {
   process.exit(1)
 }
 
+const vtimezone = tz.getVtimezoneComponent(UTD_TIMEZONE)
+if (!vtimezone) {
+  console.error('No timezone found')
+  process.exit(1)
+}
 const sections = myData.currentSections
 
 const rawDayToRRuleDay = {
@@ -29,12 +34,6 @@ const isoToYMD = (iso: string) => {
 }
 
 const events = [] as EventAttributes[]
-
-const vtimezone = tz.getVtimezoneComponent(UTD_TIMEZONE)
-if (!vtimezone) {
-  console.error('No timezone found')
-  process.exit(1)
-}
 
 for (const section of sections) {
   // Skip exam/hw sections
@@ -57,13 +56,6 @@ for (const section of sections) {
     })
 
     ruleSet.rrule(meetingRecurrenceRule)
-    // for (const holiday of currentHolidays) {
-    //   const d = datetime(...isoToYMD(holiday.date), startHr, startMin)
-    //   ruleSet.exdate(d)
-    // }
-
-    // console.log(section.subject, section.course, meeting.startTime, ruleSet.all())
-    // console.log(ruleSet.toString())
 
     // When stringified, the ruleset specifies the RRULE and DTSTART;TZID on separate lines. When we pass the RRULE to ics, it already adds the RRULE: prefix, so we need to remove it to ensure the event is parsed correctly.
     const r = ruleSet.toString().split("\n").reverse().join("\n").replace("RRULE:", "")
@@ -87,7 +79,7 @@ if (og) {
   // Ensures RRULE and DTSTART;TZID are on separate lines.
   // The ICS library tries to 'help' us by escaping any new lines in the RRULE, but this means that the event doesn't validate correctly.
   .replaceAll("\\n", "\r\n")
-// Because the RRULE and DTSTART;TZID are the on the same line, the length exceeds the 75 character limit in the RFC spec, so the ICS library wraps it onto a newline, which ends up splitting the TZID directive onto 2 lines. After the previous replacement, the 2 directives noe should be on separate lines, so we can safely 'unwrap' the TZID line without exceeding the 75 character limit.
+  // Because the RRULE and DTSTART;TZID are the on the same line, the length exceeds the 75 character limit in the RFC spec, so the ICS library wraps it onto a new line, which ends up splitting the TZID directive onto 2 lines. After the previous replacement, the 2 directives should now begin on separate lines, so we can safely 'unwrap' the TZID line without exceeding the 75 character limit.
   .replaceAll("\r\n\t", "")
   const fileName = `utd.ics`
   await Bun.write(fileName, value)
