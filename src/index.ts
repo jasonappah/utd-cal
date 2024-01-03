@@ -51,8 +51,7 @@ for (const section of sections) {
     const meetingRecurrenceRule = new RRule({
       freq: RRule.WEEKLY,
       byweekday: Array.from(meeting.daysRaw).map(day => rawDayToRRuleDay[day]),
-      // TODO: Think i neeed to reintroduce this cause the timezone doesn't get applied without it
-      // dtstart: datetime(...startArgs),
+      dtstart: datetime(...startArgs),
       tzid: UTD_TIMEZONE,
       until: datetime(...endArgs)
     })
@@ -65,8 +64,7 @@ for (const section of sections) {
 
     // console.log(section.subject, section.course, meeting.startTime, ruleSet.all())
     // console.log(ruleSet.toString())
-    const r = ruleSet.toString().replace("RRULE:", "")
-    console.log(r)
+    const r = ruleSet.toString().split("\n").reverse().join("\n").replace("RRULE:", "")
 
     events.push({
       title: `${section.subject} ${section.course} ${section.sectionNumber} - ${meeting.location}`,
@@ -83,10 +81,9 @@ for (const section of sections) {
 
 const {error, value: og} = createEvents(events)
 if (og) {
-  // const value = og.replace('BEGIN:VEVENT', `${vtimezone}BEGIN:VEVENT`)
-  const value = og
-  // .replaceAll("\\n", "\r\n")
-  // .replaceAll("\r\n\t", "")
+  const value = og.replace('BEGIN:VEVENT', `${vtimezone}BEGIN:VEVENT`)
+  .replaceAll("\\n", "\r\n")
+  .replaceAll("\r\n\t", "")
   const fileName = `utd.ics`
   await Bun.write(fileName, value)
   console.log('Wrote', fileName)
