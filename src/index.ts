@@ -64,6 +64,8 @@ for (const section of sections) {
 
     // console.log(section.subject, section.course, meeting.startTime, ruleSet.all())
     // console.log(ruleSet.toString())
+
+    // When stringified, the ruleset specifies the RRULE and DTSTART;TZID on separate lines. When we pass the RRULE to ics, it already adds the RRULE: prefix, so we need to remove it to ensure the event is parsed correctly.
     const r = ruleSet.toString().split("\n").reverse().join("\n").replace("RRULE:", "")
 
     events.push({
@@ -73,7 +75,7 @@ for (const section of sections) {
       location: meeting.location,
       recurrenceRule: r,
       productId: `jasonaa/utd-cal-${getGitCommitHash()}`,
-      // @ts-ignore
+      // @ts-ignore TODO: remove when ___ is merged
       exclusionDates: currentHolidays.map(h => isoToYMD(h.date))
     })
   }
@@ -82,7 +84,10 @@ for (const section of sections) {
 const {error, value: og} = createEvents(events)
 if (og) {
   const value = og.replace('BEGIN:VEVENT', `${vtimezone}BEGIN:VEVENT`)
+  // Ensures RRULE and DTSTART;TZID are on separate lines.
+  // The ICS library tries to 'help' us by escaping any new lines in the RRULE, but this means that the event doesn't validate correctly.
   .replaceAll("\\n", "\r\n")
+// Because the RRULE and DTSTART;TZID are the on the same line, the length exceeds the 75 character limit in the RFC spec, so the ICS library wraps it onto a newline, which ends up splitting the TZID directive onto 2 lines. After the previous replacement, the 2 directives noe should be on separate lines, so we can safely 'unwrap' the TZID line without exceeding the 75 character limit.
   .replaceAll("\r\n\t", "")
   const fileName = `utd.ics`
   await Bun.write(fileName, value)
