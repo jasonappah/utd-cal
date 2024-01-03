@@ -1,4 +1,4 @@
-import { datetime, RRule, RRuleSet } from "rrule"
+import { datetime, RRule } from "rrule"
 import { createEvents } from "ics"
 import type { DateArray, EventAttributes } from "ics"
 import { myData } from "./me"
@@ -13,9 +13,12 @@ if (!myData) {
 
 const vtimezone = tz.getVtimezoneComponent(UTD_TIMEZONE)
 if (!vtimezone) {
-  console.error('No timezone found')
+  console.error(`No timezone found for timezone: ${UTD_TIMEZONE}.`)
   process.exit(1)
 }
+
+const REMOVE_LINE = "__REMOVE_LINE__" as const
+const REMOVE_LINE_REGEX = new RegExp(`^.*(${REMOVE_LINE}).*$`, "gm")
 const sections = myData.currentSections
 
 const rawDayToRRuleDay = {
@@ -34,6 +37,7 @@ const isoToYMD = (iso: string) => {
 }
 
 const events = [] as EventAttributes[]
+const pad = (n: number) => n < 10 ? `0${n}` : `${n}`
 
 for (const section of sections) {
   // Skip exam/hw sections
@@ -58,15 +62,23 @@ for (const section of sections) {
     // When stringified, the ruleset specifies the RRULE and DTSTART;TZID on separate lines. When we pass the RRULE to ics, it already adds the RRULE: prefix, so we need to remove it to ensure the event is parsed correctly.
     const r = meetingRecurrenceRule.toString().split("\n").reverse().join("\n").replace("RRULE:", "")
 
+    const dtstart = r.match(/DTSTART;TZID=.*:(.*)/)?.[1]
+
     events.push({
       title: `${section.subject} ${section.course} ${section.sectionNumber} - ${meeting.location}`,
-      start: startArgs,
-      end: [...startDateISO, endHr, endMin],
+      // The RRULE includes a DTSTART with a floating time and TZID directive, so we don't want to use this DTSTART since the ICS library defaults to using UTC and we can't specify any other timezone here. However, the ICS library won't allow event creation to continue if we omit the start property, so we'll just remove this line in the ics file once it's generated.
+      start: REMOVE_LINE,
+      duration: { hours: endHr - startHr, minutes: endMin - startMin },
       location: meeting.location,
       recurrenceRule: r,
       productId: `jasonaa/utd-cal-${getGitCommitHash()}`,
       // @ts-ignore TODO: remove if/when https://github.com/adamgibbons/ics/pull/267 is merged + published
-      exclusionDates: currentHolidays.map(h => isoToYMD(h.date))
+
+      // 8 is the number of characters in the date string (YYYYMMDD)
+      exclusionDates: currentHolidays.map(h => {
+        const [year, month, day] = isoToYMD(h.date)
+        return dtstart.replace(/^\d{8}/g,`${year}${pad(month)}${pad(day)}`)}
+      )
     })
   }
 }
@@ -79,6 +91,10 @@ if (og) {
   .replaceAll("\\n", "\r\n")
   // Because the RRULE and DTSTART;TZID are the on the same line, the length exceeds the 75 character limit in the RFC spec, so the ICS library wraps it onto a new line, which ends up splitting the TZID directive onto 2 lines. After the previous replacement, the 2 directives should now begin on separate lines, so we can safely 'unwrap' the TZID line without exceeding the 75 character limit.
   .replaceAll("\r\n\t", "")
+  // Removes the extraneous DTSTART line
+  .replaceAll(REMOVE_LINE_REGEX, "")
+  // Adds the TZID directive to the EXDATE lines
+  .replaceAll("EXDATE:", `EXDATE;TZID=${UTD_TIMEZONE}:`)
   const fileName = `utd.ics`
   await Bun.write(fileName, value)
   console.log('Wrote', fileName)
