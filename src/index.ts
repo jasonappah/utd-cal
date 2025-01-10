@@ -72,7 +72,6 @@ for (const section of sections) {
       location: meeting.location,
       recurrenceRule: r,
       productId: `jasonaa/utd-cal-${getGitCommitHash()}`,
-      // @ts-ignore TODO: remove if/when https://github.com/adamgibbons/ics/pull/267 is merged + published
 
       // 8 is the number of characters in the date string (YYYYMMDD)
       exclusionDates: currentHolidays.map(h => {
