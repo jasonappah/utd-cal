@@ -134,5 +134,75 @@ const spring2024holidays = [
   }
 ]
 
-export const currentHolidays = fall2024holidays
+const fall2025holidays = [
+  {
+    "holiday": "Labor Day",
+    "date": "2025-09-01"
+  },
+  {
+    "holiday": "Fall break",
+    "date": "2025-11-24"
+  },
+  {
+    "holiday": "Fall break",
+    "date": "2025-11-25"
+  },
+  {
+    "holiday": "Fall break",
+    "date": "2025-11-26"
+  },
+  {
+    "holiday": "Thanksgiving holidays",
+    "date": "2025-11-27"
+  },
+  {
+    "holiday": "Thanksgiving holidays",
+    "date": "2025-11-28"
+  },
+  {
+    "holiday": "Thanksgiving holidays",
+    "date": "2025-11-29"
+  },
+  {
+    "holiday": "Thanksgiving holidays",
+    "date": "2025-11-30"
+  }
+];
+
+const spring2026holidays = [
+  {
+    "holiday": "Martin Luther King Day",
+    "date": "2026-01-19"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-16"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-17"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-18"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-19"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-20"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-21"
+  },
+  {
+    "holiday": "Spring break",
+    "date": "2026-03-22"
+  }
+];
+
+export const currentHolidays = fall2025holidays
 export const UTD_TIMEZONE = 'America/Chicago'
